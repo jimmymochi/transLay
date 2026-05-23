@@ -31,19 +31,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 執行 PyInstaller 打包 (單一 EXE)
+      - name: 執行 PyInstaller 打包主程式 Core
         run: |
           pyinstaller --clean build/pyinstaller_onefile.spec
 
-      - name: 重新命名打包產物
+      - name: 執行 PyInstaller 打包啟動器 Launcher
         run: |
-          mv build/dist/TramsLay.exe build/dist/TramsLay_Windows.exe
+          pyinstaller --clean build/pyinstaller_launcher_win.spec
+
+      - name: 重新命名與搬移打包產物
+        run: |
+          mv build/dist/TramsLay.exe build/dist/TramsLay_Windows_Core.exe
+          mv build/dist/TramsLay_Launcher.exe build/dist/TramsLay_Windows_Launcher.exe
 
       - name: 暫存 Windows 產物
         uses: actions/upload-artifact@v3
         with:
           name: windows-bin
-          path: build/dist/TramsLay_Windows.exe
+          path: |
+            build/dist/TramsLay_Windows_Core.exe
+            build/dist/TramsLay_Windows_Launcher.exe
 
   # =========================================================================
   # 2. macOS 打包編譯工作
@@ -65,20 +72,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 執行 PyInstaller 打包 (.app Bundle)
+      - name: 執行 PyInstaller 打包主程式 Core
         run: |
           pyinstaller --clean build/pyinstaller_macos.spec
 
-      - name: 將 macOS App 打包成標準 .dmg 磁碟映像檔
+      - name: 執行 PyInstaller 打包啟動器 Launcher
+        run: |
+          pyinstaller --clean build/pyinstaller_launcher_mac.spec
+
+      - name: 將 macOS 主程式與啟動器分別打包成標準 .dmg 映像檔
         run: |
           cd build/dist
-          hdiutil create -volname "TramsLay" -srcfolder TramsLay.app -ov -format UDZO TramsLay_macOS.dmg
+          hdiutil create -volname "TramsLay_Core" -srcfolder TramsLay.app -ov -format UDZO TramsLay_macOS_Core.dmg
+          hdiutil create -volname "TramsLay_Launcher" -srcfolder TramsLay_Launcher.app -ov -format UDZO TramsLay_macOS_Launcher.dmg
 
       - name: 暫存 macOS 產物
         uses: actions/upload-artifact@v3
         with:
           name: macos-bin
-          path: build/dist/TramsLay_macOS.dmg
+          path: |
+            build/dist/TramsLay_macOS_Core.dmg
+            build/dist/TramsLay_macOS_Launcher.dmg
 
   # =========================================================================
   # 3. 建立 GitHub Release 並上傳二進位檔案
@@ -106,8 +120,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            release-assets/TramsLay_Windows.exe
-            release-assets/TramsLay_macOS.dmg
+            release-assets/TramsLay_Windows_Launcher.exe
+            release-assets/TramsLay_macOS_Launcher.dmg
+            release-assets/TramsLay_Windows_Core.exe
+            release-assets/TramsLay_macOS_Core.dmg
           draft: false
           prerelease: false
           generate_release_notes: true
