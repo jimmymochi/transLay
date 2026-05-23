@@ -41,16 +41,16 @@ jobs:
 
       - name: 重新命名與搬移打包產物
         run: |
-          mv build/dist/TramsLay.exe build/dist/TramsLay_Windows_Core.exe
-          mv build/dist/TramsLay_Launcher.exe build/dist/TramsLay_Windows_Launcher.exe
+          mv dist/TramsLay.exe dist/TramsLay_Windows_Core.exe
+          mv dist/TramsLay_Launcher.exe dist/TramsLay_Windows_Launcher.exe
 
       - name: 暫存 Windows 產物
         uses: actions/upload-artifact@v4
         with:
           name: windows-bin
           path: |
-            build/dist/TramsLay_Windows_Core.exe
-            build/dist/TramsLay_Windows_Launcher.exe
+            dist/TramsLay_Windows_Core.exe
+            dist/TramsLay_Windows_Launcher.exe
 
   # =========================================================================
   # 2. macOS 打包編譯工作
@@ -82,7 +82,7 @@ jobs:
 
       - name: 將 macOS 主程式與啟動器分別打包成標準 .dmg 映像檔
         run: |
-          cd build/dist
+          cd dist
           hdiutil create -volname "TramsLay_Core" -srcfolder TramsLay.app -ov -format UDZO TramsLay_macOS_Core.dmg
           hdiutil create -volname "TramsLay_Launcher" -srcfolder TramsLay_Launcher.app -ov -format UDZO TramsLay_macOS_Launcher.dmg
 
@@ -91,8 +91,8 @@ jobs:
         with:
           name: macos-bin
           path: |
-            build/dist/TramsLay_macOS_Core.dmg
-            build/dist/TramsLay_macOS_Launcher.dmg
+            dist/TramsLay_macOS_Core.dmg
+            dist/TramsLay_macOS_Launcher.dmg
 
   # =========================================================================
   # 3. 建立 GitHub Release 並上傳二進位檔案
