@@ -4,8 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-build/
+# build/ (moved to bottom for specific file tracking)
 develop-eggs/
 dist/
 downloads/
@@ -70,3 +69,16 @@ venv.bak/
 logs/
 *.log
 test_input.pdf
+
+# Unignore and track only specific config files in build/ directory
+!build/
+build/**
+!build/pyinstaller_macos.spec
+!build/pyinstaller_onefile.spec
+!build/pyinstaller_onedir.spec
+!build/pyinstaller_launcher_win.spec
+!build/pyinstaller_launcher_mac.spec
+!build/build_app.sh
+!build/build_exe.bat
+!build/build_exe_onefile.bat
+
