@@ -338,18 +338,23 @@ class LauncherGUI:
 
     def _create_windows_shortcut(self):
         """
-        純 Python 免依賴 VBS 腳本建立 Windows 桌面捷徑
+        純 Python 免依賴 VBS 腳本建立 Windows 桌面捷徑，完美指向 Launcher 以便進行自動升級與顯示專屬圖示
         """
         desktop = os.path.join(os.environ["USERPROFILE"], "Desktop")
         shortcut_path = os.path.join(desktop, "TramsLay 論文翻譯器.lnk")
         
-        # 建立 WScript.Shell 的 VBScript
+        # 獲取 Launcher 自身的執行檔絕對路徑
+        launcher_path = sys.executable
+        launcher_dir = os.path.dirname(launcher_path)
+        
+        # 建立 WScript.Shell 的 VBScript，設定 TargetPath 為 Launcher 以便每次雙擊都享有自動更新檢查
         vbs_content = (
             f'Set sh = CreateObject("WScript.Shell")\n'
             f'Set shortcut = sh.CreateShortcut("{shortcut_path}")\n'
-            f'shortcut.TargetPath = "{self.core_path}"\n'
-            f'shortcut.WorkingDirectory = "{self.bin_dir}"\n'
-            f'shortcut.Description = "TramsLay Layout-Preserving PDF Translator"\n'
+            f'shortcut.TargetPath = "{launcher_path}"\n'
+            f'shortcut.WorkingDirectory = "{launcher_dir}"\n'
+            f'shortcut.Description = "TramsLay 論文排版還原 PDF 翻譯器"\n'
+            f'shortcut.IconLocation = "{launcher_path},0"\n'  # 完美提取 Launcher 內置的 3D 水晶圖標
             f'shortcut.Save()'
         )
         

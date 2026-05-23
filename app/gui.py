@@ -76,7 +76,7 @@ class TranslatorGUI:
         # =========================================================================
         # 1. 頂部 Banner 區
         # =========================================================================
-        banner = ctk.CTkFrame(self.root, corner_radius=0, height=75, fg_color=("#2C3E50", "#1A252F"))
+        banner = ctk.CTkFrame(self.root, corner_radius=0, height=75, fg_color=("#2C3E50", "#0F172A"))
         banner.pack(fill="x", side="top")
         banner.pack_propagate(False)
         
@@ -203,8 +203,8 @@ class TranslatorGUI:
             text="🚀 啟動翻譯管線", 
             font=ctk.CTkFont(family="Microsoft JhengHei", size=13, weight="bold"),
             command=self._start_translation,
-            fg_color="#3498DB",
-            hover_color="#2980B9",
+            fg_color=("#3498DB", "#1F9FFB"),
+            hover_color=("#2980B9", "#0086E6"),
             height=36,
             width=160
         )

@@ -73,6 +73,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='TramsLay_Launcher.app',
-    icon=None,
+    icon='build/icon.png',
     bundle_identifier='com.tramslay.launcher',
 )

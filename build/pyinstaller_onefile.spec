@@ -57,6 +57,7 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False, # 設為 False 隱藏黑色的命令提示字元視窗
+    icon='build/icon.ico',
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
