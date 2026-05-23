@@ -137,9 +137,32 @@ class LauncherGUI:
         """
         threading.Thread(target=self._async_check_flow, daemon=True).start()
 
+    def _create_launch_old_button(self):
+        """
+        發現更新時，動態在左側增加一個直接啟動本地舊版的按鈕
+        """
+        self.btn_launch_old = ctk.CTkButton(
+            self.btn_frame, 
+            text="🚀 直接啟動舊版", 
+            command=self._launch_core_app,
+            fg_color="#7F8C8D",
+            hover_color="#95A5A6"
+        )
+        self.btn_launch_old.pack(side="right", padx=(0, 10))
+
     def _async_check_flow(self):
         # 1. 檢查本地是否存在主程式
         local_exists = os.path.exists(self.core_path)
+        
+        # 讀取本地版本資訊
+        self.version_path = os.path.join(self.bin_dir, "version.txt")
+        self.local_version = "未知"
+        if local_exists and os.path.exists(self.version_path):
+            try:
+                with open(self.version_path, "r", encoding="utf-8") as f:
+                    self.local_version = f.read().strip()
+            except Exception:
+                pass
         
         if not local_exists:
             self.status_lbl.configure(text="本地未安裝主程式，準備從雲端下載安裝...")
@@ -155,6 +178,7 @@ class LauncherGUI:
             release_data = res.json()
             
             tag_name = release_data.get("tag_name", "v1.0.0")
+            self.latest_tag_name = tag_name
             self.sub_lbl.configure(text=f"智慧啟動與安裝管理器 (最新版本: {tag_name})")
             
             # 尋找對應平台的正式主程式 Asset
@@ -187,10 +211,15 @@ class LauncherGUI:
                 # 本地無軟體，引導下載
                 self.status_lbl.configure(text=f"發現最新版 TramsLay ({tag_name})，點選下方按鈕一鍵安裝！")
                 self.btn_action.configure(text="📥 一鍵下載與安裝", state="normal")
+            elif self.local_version != tag_name:
+                # 發現新版本，引導升級
+                self.status_lbl.configure(text=f"發現新版本 {tag_name}！(您當前版本為 {self.local_version})")
+                self.btn_action.configure(text="📥 一鍵升級至最新版", state="normal")
+                # 建立啟動舊版按鈕
+                self._create_launch_old_button()
             else:
-                # 本地已安裝，為求體驗簡便，我們直接啟動本地軟體 (或者若為全新安裝則更新)
-                # 這裡設計為：本地有就直接啟動，極速體驗！
-                self.status_lbl.configure(text="本地已有主程式，準備為您極速啟動...")
+                # 本地已是最新版，直接秒開
+                self.status_lbl.configure(text="本地軟體已是最新版，準備為您極速啟動...")
                 self._launch_core_app()
                 
         except Exception as e:
@@ -281,6 +310,13 @@ class LauncherGUI:
             self.status_lbl.configure(text="📥 下載完成！正在為您初始化配置...")
             self.speed_lbl.configure(text="進度：100% | 下載已成功結束")
             self.prog_bar.set(1.0)
+            
+            # 寫入本地版本檔案
+            try:
+                with open(self.version_path, "w", encoding="utf-8") as f:
+                    f.write(self.latest_tag_name)
+            except Exception as ex:
+                print(f"寫入本地版本檔失敗: {ex}")
             
             # 建立桌面捷徑 (僅 Windows 且勾選時)
             if self.is_windows and self.var_shortcut.get():
