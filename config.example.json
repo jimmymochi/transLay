@@ -1,0 +1,27 @@
+{
+  "default_translator": "google",
+  "google": {
+    "timeout": 10,
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  },
+  "openai": {
+    "api_key": "",
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+  },
+  "deepl": {
+    "api_key": ""
+  },
+  "layout": {
+    "min_font_size": 8.0,
+    "min_line_height": 1.05,
+    "default_line_height": 1.25,
+    "enable_dynamic_expansion": true,
+    "enable_redaction": true
+  },
+  "fonts": {
+    "windows_font": "msjh.ttc",
+    "mac_font": "/System/Library/Fonts/PingFang.ttc",
+    "fallback_font": "gkai00mp.ttf"
+  }
+}

@@ -1,0 +1,115 @@
+name: TramsLay Multi-OS Release Build
+
+# 當推送版號標記 (tag) 如 v1.0.0 時，或手動點選觸發時執行
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # =========================================================================
+  # 1. Windows 打包編譯工作
+  # =========================================================================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: 檢出專案代碼
+        uses: actions/checkout@v3
+
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安裝專案依賴
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 執行 PyInstaller 打包 (單一 EXE)
+        run: |
+          pyinstaller --clean build/pyinstaller_onefile.spec
+
+      - name: 重新命名打包產物
+        run: |
+          mv build/dist/TramsLay.exe build/dist/TramsLay_Windows.exe
+
+      - name: 暫存 Windows 產物
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-bin
+          path: build/dist/TramsLay_Windows.exe
+
+  # =========================================================================
+  # 2. macOS 打包編譯工作
+  # =========================================================================
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: 檢出專案代碼
+        uses: actions/checkout@v3
+
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安裝專案依賴
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 執行 PyInstaller 打包 (.app Bundle)
+        run: |
+          pyinstaller --clean build/pyinstaller_macos.spec
+
+      - name: 將 macOS App 打包成標準 .dmg 磁碟映像檔
+        run: |
+          cd build/dist
+          hdiutil create -volname "TramsLay" -srcfolder TramsLay.app -ov -format UDZO TramsLay_macOS.dmg
+
+      - name: 暫存 macOS 產物
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-bin
+          path: build/dist/TramsLay_macOS.dmg
+
+  # =========================================================================
+  # 3. 建立 GitHub Release 並上傳二進位檔案
+  # =========================================================================
+  publish-release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 檢出專案代碼
+        uses: actions/checkout@v3
+
+      - name: 下載 Windows 產物
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-bin
+          path: release-assets
+
+      - name: 下載 macOS 產物
+        uses: actions/download-artifact@v3
+        with:
+          name: macos-bin
+          path: release-assets
+
+      - name: 建立 GitHub Release 並發佈資源
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-assets/TramsLay_Windows.exe
+            release-assets/TramsLay_macOS.dmg
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
