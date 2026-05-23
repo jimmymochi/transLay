@@ -18,10 +18,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: 檢出專案代碼
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 設定 Python 環境
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -45,7 +45,7 @@ jobs:
           mv build/dist/TramsLay_Launcher.exe build/dist/TramsLay_Windows_Launcher.exe
 
       - name: 暫存 Windows 產物
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-bin
           path: |
@@ -59,10 +59,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: 檢出專案代碼
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 設定 Python 環境
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -87,7 +87,7 @@ jobs:
           hdiutil create -volname "TramsLay_Launcher" -srcfolder TramsLay_Launcher.app -ov -format UDZO TramsLay_macOS_Launcher.dmg
 
       - name: 暫存 macOS 產物
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-bin
           path: |
@@ -102,28 +102,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 檢出專案代碼
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 下載 Windows 產物
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-bin
           path: release-assets
 
       - name: 下載 macOS 產物
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-bin
           path: release-assets
 
       - name: 建立 GitHub Release 並發佈資源
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-assets/TramsLay_Windows_Launcher.exe
-            release-assets/TramsLay_macOS_Launcher.dmg
-            release-assets/TramsLay_Windows_Core.exe
-            release-assets/TramsLay_macOS_Core.dmg
+            release-assets/**/*.exe
+            release-assets/**/*.dmg
           draft: false
           prerelease: false
           generate_release_notes: true
