@@ -373,12 +373,8 @@ class LauncherGUI:
         
         try:
             if self.is_windows:
-                # 雙擊啟動主程式，設定 creationflags 以完全分離進程，確保 Launcher 退出後主程式能正常活著
-                subprocess.Popen(
-                    [self.core_path],
-                    cwd=self.bin_dir,
-                    creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.DETACHED_PROCESS
-                )
+                # Windows 平台使用 os.startfile 模擬雙擊啟動，完美分離進程且絕無黑框，徹底避免 WinError 87 參數錯誤
+                os.startfile(self.core_path)
             else:
                 # macOS 上雙擊掛載 dmg 或者是如果是 app 則啟動之
                 # 由於 macOS DMG 用戶可以拖曳，Launcher 主要在 Windows 上能發揮極致一鍵流
