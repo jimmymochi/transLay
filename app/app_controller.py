@@ -45,8 +45,12 @@ class AppController:
         背景工作線核心邏輯，在完成各階段任務時透過 Queue 回傳訊號給主 UI 執行緒
         """
         try:
+            # 0. 優先發送即時純文字訊號，確保 GUI 介面第一時間獲取反饋
+            self.ui_queue.put(">>> 正在初始化系統日誌核心...")
+            
             # 1. 設置專屬 GUI 日誌通道，將 logger 的輸出同時灌入 ui_queue
             logger = setup_logger(debug=debug_mode, log_queue=self.ui_queue)
+            self.ui_queue.put(">>> 系統日誌核心載入成功！正在初始化 PDF 翻譯引擎...")
             logger.info("背景執行緒啟動成功，初始化翻譯管線...")
 
             # 2. 實例化選擇的翻譯器

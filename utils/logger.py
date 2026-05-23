@@ -48,9 +48,11 @@ def setup_logger(debug=False, log_queue=None):
     console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
     logger.addHandler(console_handler)
 
-    # 2. File Handler
+    # 2. File Handler (優先使用系統 Temp 目錄，防止 OneDrive/Dropbox 等同步軟體鎖定檔案導致 I/O 死鎖)
     try:
-        log_dir = os.path.join(os.getcwd(), "logs")
+        # 使用系統 Temp 臨時區存放日誌，100% 避免同步鎖定與唯讀目錄權限衝突
+        temp_dir = os.environ.get("TEMP") or os.environ.get("TMP") or os.getcwd()
+        log_dir = os.path.join(temp_dir, "TramsLay_Logs")
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         log_file = os.path.join(log_dir, f"translator_{datetime.now().strftime('%Y%m%d')}.log")
