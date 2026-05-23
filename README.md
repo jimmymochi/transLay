@@ -1,7 +1,26 @@
 # TramsLay - Layout-Preserving PDF Translator (論文排版還原翻譯器)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Actions Build](https://github.com/your-username/TramsLay/actions/workflows/release.yml/badge.svg)](#github-自動雲端打包發佈)
+<div align="center">
+  <br />
+  <a href="https://github.com/jimmymochi/transLay/releases/download/v1.0.0/TramsLay_Windows_Launcher.exe">
+    <img src="https://img.shields.io/badge/📥_點我一鍵下載_Windows_啟動器-(3MB)-blue?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows" />
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/jimmymochi/transLay/releases/download/v1.0.0/TramsLay_macOS_Launcher.dmg">
+    <img src="https://img.shields.io/badge/📥_點我一鍵下載_macOS_啟動器-(3MB)-black?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS" />
+  </a>
+  <br />
+  <br />
+  <a href="https://github.com/jimmymochi/transLay/releases/latest">
+    <img src="https://img.shields.io/badge/🔍_前往_GitHub_最新_Release_發佈頁面-orange?style=flat-square" alt="Latest Release" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License" />
+  </a>
+</div>
+
+<br />
 
 TramsLay 是一款專為學術論文打造的 **PDF 版面還原翻譯工具**。它致力於將英文 PDF 論文翻譯為流暢的繁體中文，且**極致保留原始雙欄結構、圖片、表格、公式與頁首頁尾**，讓您閱讀譯文時如同閱讀原文般直觀舒適。
 
