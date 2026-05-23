@@ -74,7 +74,7 @@ class LauncherGUI:
         # 副標題 (啟動器版本)
         self.sub_lbl = ctk.CTkLabel(
             self.main_frame, 
-            text="智慧啟動與安裝管理器 v1.0.0", 
+            text="智慧啟動與安裝管理器 v1.0.1", 
             font=ctk.CTkFont(family="Microsoft JhengHei", size=12),
             text_color="#7F8C8D"
         )

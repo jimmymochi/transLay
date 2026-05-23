@@ -56,6 +56,8 @@ class TranslatorGUI:
         self.var_openai_key = tk.StringVar(value=self.config.get("openai", {}).get("api_key", ""))
         self.var_openai_model = tk.StringVar(value=self.config.get("openai", {}).get("model", "gpt-4o-mini"))
         self.var_deepl_key = tk.StringVar(value=self.config.get("deepl", {}).get("api_key", ""))
+        self.var_gemini_key = tk.StringVar(value=self.config.get("gemini", {}).get("api_key", ""))
+        self.var_gemini_model = tk.StringVar(value=self.config.get("gemini", {}).get("model", "gemini-1.5-flash"))
         
         self.var_dummy_mode = tk.StringVar(value="normal")
         self.var_debug_mode = tk.BooleanVar(value=False)
@@ -159,7 +161,7 @@ class TranslatorGUI:
         self.cbo_trans = ctk.CTkOptionMenu(
             top_settings_frame, 
             variable=self.var_translator,
-            values=["google", "openai", "deepl", "dummy"],
+            values=["gemini", "google", "openai", "deepl", "dummy"],
             command=self._on_translator_change,
             width=130
         )
@@ -283,7 +285,26 @@ class TranslatorGUI:
             
         trans = selected_trans.lower()
         
-        if trans == "openai":
+        if trans == "gemini":
+            ctk.CTkLabel(self.config_frame, text="Gemini API Key:").grid(row=0, column=0, sticky="w", pady=4, padx=(0, 10))
+            self.ent_gemini_key = ctk.CTkEntry(
+                self.config_frame, 
+                textvariable=self.var_gemini_key, 
+                width=350, 
+                show="" if self.var_show_keys.get() else "*"
+            )
+            self.ent_gemini_key.grid(row=0, column=1, columnspan=2, sticky="w", pady=4, padx=5)
+            
+            ctk.CTkLabel(self.config_frame, text="模型選擇:").grid(row=1, column=0, sticky="w", pady=4, padx=(0, 10))
+            cbo_model = ctk.CTkOptionMenu(
+                self.config_frame, 
+                variable=self.var_gemini_model, 
+                values=["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-pro-exp"],
+                width=160
+            )
+            cbo_model.grid(row=1, column=1, sticky="w", pady=4, padx=5)
+            
+        elif trans == "openai":
             ctk.CTkLabel(self.config_frame, text="OpenAI API Key:").grid(row=0, column=0, sticky="w", pady=4, padx=(0, 10))
             self.ent_openai_key = ctk.CTkEntry(
                 self.config_frame, 
@@ -344,7 +365,9 @@ class TranslatorGUI:
         """
         show_char = "" if self.var_show_keys.get() else "*"
         trans = self.var_translator.get()
-        if trans == "openai" and hasattr(self, "ent_openai_key"):
+        if trans == "gemini" and hasattr(self, "ent_gemini_key"):
+            self.ent_gemini_key.configure(show=show_char)
+        elif trans == "openai" and hasattr(self, "ent_openai_key"):
             self.ent_openai_key.configure(show=show_char)
         elif trans == "deepl" and hasattr(self, "ent_deepl_key"):
             self.ent_deepl_key.configure(show=show_char)
@@ -393,10 +416,19 @@ class TranslatorGUI:
 
         # 打包組態
         run_config = self.config.copy()
+        if "gemini" not in run_config: run_config["gemini"] = {}
         if "openai" not in run_config: run_config["openai"] = {}
         if "deepl" not in run_config: run_config["deepl"] = {}
         
-        if translator_name == "openai":
+        if translator_name == "gemini":
+            api_key = self.var_gemini_key.get().strip()
+            if not api_key:
+                messagebox.showerror("金鑰缺失", "選用 Gemini 翻譯時，API Key 欄位不可空白！")
+                return
+            run_config["gemini"]["api_key"] = api_key
+            run_config["gemini"]["model"] = self.var_gemini_model.get()
+            
+        elif translator_name == "openai":
             api_key = self.var_openai_key.get().strip()
             if not api_key:
                 messagebox.showerror("金鑰缺失", "選用 OpenAI 翻譯時，API Key 欄位不可空白！")

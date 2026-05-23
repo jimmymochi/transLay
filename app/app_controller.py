@@ -4,6 +4,7 @@ from utils.logger import setup_logger
 from core.pdf_processor import PDFProcessor
 from translators.google_translator import GoogleTranslator
 from translators.dummy_translator import DummyTranslator
+from translators.gemini_translator import GeminiTranslator
 
 class AppController:
     """
@@ -73,6 +74,12 @@ class AppController:
                 from translators.deepl_translator import DeepLTranslator
                 translator = DeepLTranslator(
                     api_key=d_cfg.get("api_key", "")
+                )
+            elif translator_name == "gemini":
+                g_cfg = config.get("gemini", {})
+                translator = GeminiTranslator(
+                    api_key=g_cfg.get("api_key", ""),
+                    model=g_cfg.get("model", "gemini-1.5-flash")
                 )
             elif translator_name == "dummy":
                 translator = DummyTranslator(mode=dummy_mode)
