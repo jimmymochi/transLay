@@ -76,6 +76,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='TramsLay.app',
-    icon='build/icon.png',
+    icon='build/icon.icns',
     bundle_identifier='com.tramslay.pdf-translator',
 )
