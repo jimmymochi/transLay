@@ -7,6 +7,8 @@ from tkinter import filedialog, messagebox
 from utils.config_loader import load_config
 from utils.logger import setup_logger
 from app.app_controller import AppController
+from app.updater import AppUpdater
+from version import APP_VERSION, APP_DISPLAY_NAME
 
 # 設置 CustomTkinter 預設外觀與配色
 ctk.set_appearance_mode("System")  # System, Dark, Light
@@ -19,7 +21,7 @@ class TranslatorGUI:
     """
     def __init__(self, root: ctk.CTk):
         self.root = root
-        self.root.title("TramsLay - 論文排版還原 PDF 翻譯器")
+        self.root.title(f"{APP_DISPLAY_NAME}  ({APP_VERSION})")
         self.root.geometry("840x740")
         self.root.minsize(800, 680)
         
@@ -29,6 +31,11 @@ class TranslatorGUI:
         # 建立 UI 專屬通訊 Queue 與 Controller
         self.ui_queue = queue.Queue()
         self.controller = AppController(self.ui_queue)
+        
+        # 初始化應用內更新器
+        self.updater = AppUpdater(ui_callback=self._on_update_event)
+        self._pending_download_url = None
+        self._pending_asset_name = None
         
         # 保存暫存輸出檔案路徑，用於快捷開啟
         self.out_pdf_path = None
@@ -90,15 +97,41 @@ class TranslatorGUI:
         )
         title_lbl.pack(side="left", pady=15, padx=25)
         
-        # 主題風格切換下拉選單 (極具現代質感)
+        # 右側控制區容器
+        right_controls = ctk.CTkFrame(banner, fg_color="transparent")
+        right_controls.pack(side="right", pady=10, padx=15)
+        
+        # 主題風格切換下拉選單
         theme_menu = ctk.CTkOptionMenu(
-            banner, 
+            right_controls, 
             values=["System", "Dark", "Light"],
             command=self._change_appearance_mode,
-            width=100
+            width=90
         )
-        theme_menu.pack(side="right", pady=15, padx=25)
+        theme_menu.pack(side="right", padx=(8, 0))
         theme_menu.set("System")
+        
+        # 版本號標籤
+        ver_lbl = ctk.CTkLabel(
+            right_controls,
+            text=APP_VERSION,
+            font=ctk.CTkFont(family="Consolas", size=11),
+            text_color="#95A5A6"
+        )
+        ver_lbl.pack(side="right", padx=(8, 0))
+        
+        # 檢查更新按鈕
+        self.btn_update = ctk.CTkButton(
+            right_controls,
+            text="🔄 檢查更新",
+            font=ctk.CTkFont(family="Microsoft JhengHei", size=11),
+            command=self._check_for_update,
+            fg_color="#27AE60",
+            hover_color="#219A52",
+            width=100,
+            height=28
+        )
+        self.btn_update.pack(side="right", padx=(0, 0))
 
         # 主體內容卡片滾動區
         main_container = ctk.CTkFrame(self.root, fg_color="transparent")
@@ -563,3 +596,84 @@ class TranslatorGUI:
                 messagebox.showerror("錯誤", f"無法開啟資料夾: {e}")
         else:
             messagebox.showerror("錯誤", "找不到輸出目錄！")
+
+    # =========================================================================
+    # 應用內更新功能
+    # =========================================================================
+    def _check_for_update(self):
+        """
+        點擊「檢查更新」按鈕觸發背景版本檢查
+        """
+        self.btn_update.configure(state="disabled", text="⏳ 檢查中...")
+        self.updater.check_for_update()
+
+    def _on_update_event(self, event_type: str, data: dict):
+        """
+        接收更新器的背景回呼事件，安全地切回主線程更新 UI
+        """
+        self.root.after(0, self._handle_update_event, event_type, data)
+
+    def _handle_update_event(self, event_type: str, data: dict):
+        """
+        在主線程中處理更新事件
+        """
+        if event_type == "checking":
+            pass  # 按鈕已在 _check_for_update 中禁用
+
+        elif event_type == "no_update":
+            self.btn_update.configure(state="normal", text="🔄 檢查更新")
+            messagebox.showinfo("版本檢查", data.get("message", "已是最新版！"))
+
+        elif event_type == "update_available":
+            self.btn_update.configure(state="normal", text="🔄 檢查更新")
+            remote_ver = data.get("remote_version", "")
+            local_ver = data.get("local_version", "")
+            download_url = data.get("download_url", "")
+            asset_name = data.get("asset_name", "")
+            asset_size = data.get("asset_size", 0)
+            size_mb = asset_size / 1024 / 1024 if asset_size else 0
+
+            msg = (
+                f"發現新版本！\n\n"
+                f"您的版本: {local_ver}\n"
+                f"最新版本: {remote_ver}\n"
+                f"檔案大小: {size_mb:.1f} MB\n\n"
+                f"是否立即下載並更新？"
+            )
+
+            if download_url:
+                user_choice = messagebox.askyesno("發現新版本", msg)
+                if user_choice:
+                    self._pending_download_url = download_url
+                    self._pending_asset_name = asset_name
+                    self._start_update_download()
+            else:
+                messagebox.showwarning("更新提示",
+                    f"發現新版本 {remote_ver}，但找不到適配的安裝包。\n"
+                    f"請前往 GitHub Release 頁面手動下載：\n"
+                    f"https://github.com/jimmymochi/transLay/releases")
+
+        elif event_type == "downloading":
+            progress = data.get("progress", 0.0)
+            message = data.get("message", "")
+            self.btn_update.configure(text=f"⬇️ {int(progress*100)}%")
+
+        elif event_type == "download_done":
+            self.btn_update.configure(state="normal", text="✅ 更新完成")
+            file_path = data.get("file_path", "")
+            messagebox.showinfo("更新完成",
+                f"最新版主程式已下載完成！\n\n"
+                f"存放位置: {file_path}\n\n"
+                f"請關閉軟體後重新啟動，即可使用最新版本。")
+
+        elif event_type == "error":
+            self.btn_update.configure(state="normal", text="🔄 檢查更新")
+            messagebox.showerror("更新錯誤", data.get("message", "更新過程中發生未知錯誤"))
+
+    def _start_update_download(self):
+        """
+        啟動背景下載更新
+        """
+        if self._pending_download_url:
+            self.btn_update.configure(state="disabled", text="⬇️ 0%")
+            self.updater.download_update(self._pending_download_url, self._pending_asset_name)

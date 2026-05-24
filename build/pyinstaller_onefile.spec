@@ -12,6 +12,7 @@ ctk_dir = os.path.dirname(customtkinter.__file__)
 # 定義要打包的靜態資料 (專案本地 fonts, opencc 內建字典, customtkinter 主題配置)
 datas = [
     ('..\\fonts', 'fonts'),
+    ('icon.ico', '.'),
     (opencc_dir, 'opencc'),
     (ctk_dir, 'customtkinter'),
 ]
@@ -29,6 +30,8 @@ a = Analysis(
         'PIL',
         'requests',
         'dotenv',
+        'version',
+        'app.updater',
     ],
     hookspath=[],
     hooksconfig={},
