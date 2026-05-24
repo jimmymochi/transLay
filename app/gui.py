@@ -221,10 +221,7 @@ class TranslatorGUI:
         opt_frame = ctk.CTkFrame(settings_card, fg_color="transparent")
         opt_frame.pack(fill="x", padx=15, pady=5)
         
-        chk_debug = ctk.CTkCheckBox(opt_frame, text="啟用除錯模式 (同步繪製多色邊界框 PDF)", variable=self.var_debug_mode)
-        chk_debug.pack(side="left", padx=(0, 30))
-        
-        chk_ocr = ctk.CTkCheckBox(opt_frame, text="啟用 OCR 圖層預先分析", variable=self.var_ocr_mode)
+        chk_ocr = ctk.CTkCheckBox(opt_frame, text="啟用 OCR 圖層預先分析 (針對掃描件或特殊排版)", variable=self.var_ocr_mode)
         chk_ocr.pack(side="left")
 
         # =========================================================================
