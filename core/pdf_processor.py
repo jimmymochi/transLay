@@ -87,6 +87,9 @@ class PDFProcessor:
             # 建立 soft obstacles 列表 (除當前處理塊外，所有其他 text blocks 都是 soft obstacles)
             all_text_bboxes = [g["bbox"] for g in grouped_blocks]
             
+            # 用於暫存待寫入的譯文資料，避免逐一 apply_redactions 導致 PDF 檔案增量結構膨脹
+            pending_inserts = []
+            
             # 4. 逐一處理每個文字區塊
             for block in grouped_blocks:
                 block_id = block["block_id"]
@@ -147,44 +150,17 @@ class PDFProcessor:
                     self.logger.warning(f"頁 {page_num} 塊 {block_id}: 觸發溢位備援，部分文字被截斷。")
                     self.overflow_manager.add_overflow(page_num, block_id, original_text, translated_text)
                 
-                # 7. PDF 擦除原文與覆寫新文
-                try:
-                    # 使用高精度紅線標註擦除 (Redaction) 徹底移除原文，不留重疊死角
-                    # 使用 fill=False 保持背景透明，完美保留原有背景底色與遮罩，避免出現白色矩形空白塊
-                    rect = fitz.Rect(bbox)
-                    page.add_redact_annot(rect, fill=False)
-                    page.apply_redactions()
-                    
-                    # 擷取原文字型顏色並轉換為 RGB (0.0~1.0)
-                    orig_color = block.get("font_color", 0x1a1a1a)
-                    r = ((orig_color >> 16) & 255) / 255.0
-                    g = ((orig_color >> 8) & 255) / 255.0
-                    b = (orig_color & 255) / 255.0
-                    text_color = (r, g, b)
-                    
-                    # 覆寫繁體中文新文，並使用原文字體顏色
-                    # insert_textbox 在文字過長時會自動截斷，配合我們的 fitting 能確保版面完美
-                    page.insert_textbox(
-                        fitz.Rect(final_bbox),
-                        rendered_text,
-                        fontname=font_name,
-                        fontfile=font_file,
-                        fontsize=final_fs,
-                        lineheight=final_lh,
-                        color=text_color
-                    )
-                    
-                    # 如果有溢位，在右下角繪製一朵小紅花或紅色 [+] 符號
-                    if is_overflow:
-                        page.insert_text(
-                            fitz.Point(final_bbox[2] - 12, final_bbox[3] - 2),
-                            "[+]",
-                            fontsize=8.0,
-                            color=(1.0, 0.0, 0.0)
-                        )
-                        
-                except Exception as e:
-                    self.logger.error(f"寫入 PDF 頁 {page_num} 塊 {block_id} 時出錯: {e}")
+                # 暫存此區塊待寫入之資料
+                pending_inserts.append({
+                    "bbox": bbox,
+                    "final_bbox": final_bbox,
+                    "rendered_text": rendered_text,
+                    "final_fs": final_fs,
+                    "final_lh": final_lh,
+                    "font_color": block.get("font_color", 0x1a1a1a),
+                    "is_overflow": is_overflow,
+                    "block_id": block_id
+                })
                 
                 # 8. 除錯層圖案繪製
                 if debug_mode and debug_doc:
@@ -195,6 +171,48 @@ class PDFProcessor:
                     db_page.draw_rect(fitz.Rect(final_bbox), color=(0, 0.8, 0), width=0.8)
                     # 標註 block_id
                     db_page.insert_text(fitz.Point(bbox[0], bbox[1] - 2), f"ID:{block_id} ({orig_fs:.1f}pt)", fontsize=6.0, color=(0, 0, 1))
+
+            # 7. 一次性執行頁面擦除 (Redaction) 與中文譯文寫入
+            if pending_inserts:
+                try:
+                    for item in pending_inserts:
+                        rect = fitz.Rect(item["bbox"])
+                        page.add_redact_annot(rect, fill=False)
+                    page.apply_redactions()
+                except Exception as e:
+                    self.logger.error(f"頁 {page_num} 一次性執行擦除 (Redactions) 失敗: {e}")
+
+                # 寫入翻譯新文
+                for item in pending_inserts:
+                    try:
+                        # 擷取原文字型顏色並轉換為 RGB (0.0~1.0)
+                        orig_color = item["font_color"]
+                        r = ((orig_color >> 16) & 255) / 255.0
+                        g = ((orig_color >> 8) & 255) / 255.0
+                        b = (orig_color & 255) / 255.0
+                        text_color = (r, g, b)
+                        
+                        # 覆寫繁體中文新文，並使用原文字體顏色
+                        page.insert_textbox(
+                            fitz.Rect(item["final_bbox"]),
+                            item["rendered_text"],
+                            fontname=font_name,
+                            fontfile=font_file,
+                            fontsize=item["final_fs"],
+                            lineheight=item["final_lh"],
+                            color=text_color
+                        )
+                        
+                        # 如果有溢位，在右下角繪製一朵小紅花或紅色 [+] 符號
+                        if item["is_overflow"]:
+                            page.insert_text(
+                                fitz.Point(item["final_bbox"][2] - 12, item["final_bbox"][3] - 2),
+                                "[+]",
+                                fontsize=8.0,
+                                color=(1.0, 0.0, 0.0)
+                            )
+                    except Exception as e:
+                        self.logger.error(f"寫入 PDF 頁 {page_num} 塊 {item['block_id']} 時出錯: {e}")
 
             # 繪製公共障礙物 (硬障礙物) 至除錯頁
             if debug_mode and debug_doc:
@@ -228,12 +246,23 @@ class PDFProcessor:
             if debug_mode and debug_doc:
                 self._generate_appendix(debug_doc, font_name, font_file)
 
-        # 儲存檔案
+        # 儲存檔案前進行字型子集化 (Subset Fonts) 以極致最佳化檔案體積
+        try:
+            doc.subset_fonts()
+            self.logger.info("譯文 PDF 字型子集化 (subset_fonts) 完成。")
+        except Exception as e:
+            self.logger.warning(f"譯文 PDF 字型子集化失敗: {e}")
+
         doc.save(output_pdf_path)
         doc.close()
         self.logger.info(f"成功儲存譯文 PDF 至: {output_pdf_path}")
         
         if debug_mode and debug_doc:
+            try:
+                debug_doc.subset_fonts()
+                self.logger.info("除錯 PDF 字型子集化 (subset_fonts) 完成。")
+            except Exception as e:
+                self.logger.warning(f"除錯 PDF 字型子集化失敗: {e}")
             debug_doc.save(debug_pdf_path)
             debug_doc.close()
             self.logger.info(f"成功儲存除錯 PDF 至: {debug_pdf_path}")

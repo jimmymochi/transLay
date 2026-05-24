@@ -76,7 +76,12 @@ class AppUpdater:
 
         except Exception as e:
             self.logger.error(f"檢查更新時出錯: {e}")
-            self.ui_callback("error", {"message": f"檢查更新失敗: {e}"})
+            err_msg = str(e)
+            if "Connection" in err_msg or "NameResolution" in err_msg or "timeout" in err_msg.lower() or "getaddrinfo" in err_msg:
+                friendly_msg = "連線失敗！無法連接至 GitHub 更新伺服器，請檢查您的網路連線是否正常。"
+            else:
+                friendly_msg = f"檢查更新失敗: {e}"
+            self.ui_callback("error", {"message": friendly_msg})
         finally:
             self.is_checking = False
 

@@ -230,7 +230,12 @@ class LauncherGUI:
             else:
                 self.status_lbl.configure(text="❌ 連線 GitHub 失敗，且本地無可用軟體！")
                 self.btn_action.configure(text="重試連線", state="normal")
-                messagebox.showerror("連線錯誤", f"無法連接至 GitHub 獲取安裝包，請檢查網路設定！\n錯誤: {e}")
+                err_msg = str(e)
+                if "Connection" in err_msg or "NameResolution" in err_msg or "timeout" in err_msg.lower() or "getaddrinfo" in err_msg:
+                    friendly_msg = "連線失敗！無法連接至 GitHub 更新伺服器，請檢查您的網路連線是否正常。"
+                else:
+                    friendly_msg = f"無法連接至 GitHub 獲取安裝包，請檢查網路設定！\n錯誤: {e}"
+                messagebox.showerror("連線錯誤", friendly_msg)
 
     def _on_action_click(self):
         """
