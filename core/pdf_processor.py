@@ -104,6 +104,17 @@ class PDFProcessor:
                 raw_translation = self.translator.translate(original_text)
                 translated_text = self.cc_converter.convert(raw_translation)
                 
+                # 判定翻譯是否有效。若為空、僅有空白、與原文相同，或者包含翻譯失敗的錯誤標記，則保留原文不予擦除
+                is_failed = False
+                for err_marker in ["[翻譯失敗]", "[Gemini 翻譯失敗]", "[OpenAI 翻譯失敗]", "[DeepL 翻譯失敗]"]:
+                    if err_marker in translated_text:
+                        is_failed = True
+                        break
+                
+                if not translated_text or not translated_text.strip() or translated_text.strip() == original_text.strip() or is_failed:
+                    self.logger.warning(f"頁 {page_num} 塊 {block_id}: 翻譯無效或失敗，保留原始英文文字，避免空白。")
+                    continue
+                
                 # 決定當前區塊的欄位限制
                 col_bounds = None
                 if column_dividers:
@@ -139,11 +150,19 @@ class PDFProcessor:
                 # 7. PDF 擦除原文與覆寫新文
                 try:
                     # 使用高精度紅線標註擦除 (Redaction) 徹底移除原文，不留重疊死角
+                    # 使用 fill=False 保持背景透明，完美保留原有背景底色與遮罩，避免出現白色矩形空白塊
                     rect = fitz.Rect(bbox)
-                    page.add_redact_annot(rect, fill=(1, 1, 1))
+                    page.add_redact_annot(rect, fill=False)
                     page.apply_redactions()
                     
-                    # 覆寫繁體中文新文
+                    # 擷取原文字型顏色並轉換為 RGB (0.0~1.0)
+                    orig_color = block.get("font_color", 0x1a1a1a)
+                    r = ((orig_color >> 16) & 255) / 255.0
+                    g = ((orig_color >> 8) & 255) / 255.0
+                    b = (orig_color & 255) / 255.0
+                    text_color = (r, g, b)
+                    
+                    # 覆寫繁體中文新文，並使用原文字體顏色
                     # insert_textbox 在文字過長時會自動截斷，配合我們的 fitting 能確保版面完美
                     page.insert_textbox(
                         fitz.Rect(final_bbox),
@@ -152,7 +171,7 @@ class PDFProcessor:
                         fontfile=font_file,
                         fontsize=final_fs,
                         lineheight=final_lh,
-                        color=(0.1, 0.1, 0.1) # 深灰接近黑色，視覺效果更精緻
+                        color=text_color
                     )
                     
                     # 如果有溢位，在右下角繪製一朵小紅花或紅色 [+] 符號

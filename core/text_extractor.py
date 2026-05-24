@@ -38,6 +38,7 @@ class TextExtractor:
             # 用於估計整個 Block 的主要字體特徵
             font_sizes = []
             font_names = []
+            font_colors = []
             
             for line in lines:
                 line_spans = line.get("spans", [])
@@ -49,6 +50,7 @@ class TextExtractor:
                         line_text += span_text
                         font_sizes.append(span.get("size", 10.0))
                         font_names.append(span.get("font", "sans-serif"))
+                        font_colors.append(span.get("color", 0x1a1a1a))
                         
                 if line_text.strip():
                     extracted_lines.append({
@@ -63,13 +65,15 @@ class TextExtractor:
             # 計算此 Block 的主導字號 (取眾數或平均值)
             main_size = max(set(font_sizes), key=font_sizes.count) if font_sizes else 10.0
             main_font = max(set(font_names), key=font_names.count) if font_names else "Helvetica"
+            main_color = max(set(font_colors), key=font_colors.count) if font_colors else 0x1a1a1a
             
             raw_blocks.append({
                 "bbox": block_bbox,
                 "lines": extracted_lines,
                 "text": " ".join(all_spans_text),
                 "font_size": main_size,
-                "font_name": main_font
+                "font_name": main_font,
+                "font_color": main_color
             })
             
         return raw_blocks
