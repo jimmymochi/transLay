@@ -661,10 +661,21 @@ class TranslatorGUI:
         elif event_type == "download_done":
             self.btn_update.configure(state="normal", text="✅ 更新完成")
             file_path = data.get("file_path", "")
-            messagebox.showinfo("更新完成",
-                f"最新版主程式已下載完成！\n\n"
-                f"存放位置: {file_path}\n\n"
-                f"請關閉軟體後重新啟動，即可使用最新版本。")
+            
+            user_choice = messagebox.askyesno("更新下載完成",
+                "最新版主程式已成功下載！\n\n"
+                "軟體將會自動重新啟動並套用更新，是否立即重啟？"
+            )
+            
+            if user_choice:
+                try:
+                    self.updater.restart_and_apply_update(file_path)
+                except Exception as e:
+                    messagebox.showerror("重啟失敗", f"無法執行自動更新重啟: {e}\n請手動替換檔案後重新啟動。")
+            else:
+                messagebox.showinfo("更新提示", 
+                    "更新已下載！\n"
+                    "您可以在關閉程式後，手動將帶有 .new 後綴的檔案替換為原主程式以套用更新。")
 
         elif event_type == "error":
             self.btn_update.configure(state="normal", text="🔄 檢查更新")
