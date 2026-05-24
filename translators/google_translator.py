@@ -35,6 +35,12 @@ class GoogleTranslator(BaseTranslator):
         if len(cleaned_text) > 1500:
             return self._translate_long_text(cleaned_text)
 
+        return self._translate_single(cleaned_text)
+
+    def _translate_single(self, cleaned_text: str) -> str:
+        """
+        執行單次 Google 翻譯 API 請求（不含長度檢查，避免遞迴）
+        """
         # 請求參數
         params = {
             "client": "gtx",
@@ -74,16 +80,14 @@ class GoogleTranslator(BaseTranslator):
                             translated_parts.append(part[0])
                 
                 result = "".join(translated_parts)
-                # 確保回傳繁體中文 (有時可能會混入部分簡體，但此端點 tl=zh-TW 表現優異)
                 return result
 
             except Exception as e:
                 self.logger.error(f"Google 翻譯嘗試第 {attempt + 1} 次失敗: {e}")
                 if attempt == 2:
-                    # 3 次皆失敗，回傳原文以策安全，不讓程序崩潰
-                    return f"[翻譯失敗] {text}"
+                    return f"[翻譯失敗] {cleaned_text}"
         
-        return text
+        return cleaned_text
 
     def _translate_long_text(self, text: str) -> str:
         """
@@ -118,7 +122,8 @@ class GoogleTranslator(BaseTranslator):
 
         translated_chunks = []
         for chunk in chunks:
-            translated_chunks.append(self.translate(chunk))
+            # 直接呼叫 _translate_single，不再經過 translate() 的長度檢查，徹底杜絕無限遞迴
+            translated_chunks.append(self._translate_single(chunk))
             # 延遲避免請求過快
             time.sleep(0.5)
 
