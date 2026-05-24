@@ -480,6 +480,17 @@ class TranslatorGUI:
             except queue.Empty:
                 break
                 
+            # 1. 優先檢查是否為純文字日誌 (包含 logger 拋出的 str)，防止 str 呼叫 .get() 導致 AttributeError 崩潰
+            if isinstance(msg, str):
+                self._write_log(msg)
+                self.ui_queue.task_done()
+                continue
+                
+            # 2. 安全防護：若非字典格式，跳過處理防止異常
+            if not isinstance(msg, dict):
+                self.ui_queue.task_done()
+                continue
+                
             msg_type = msg.get("type")
             
             if msg_type == "progress":
@@ -520,9 +531,6 @@ class TranslatorGUI:
                 
             elif msg_type == "finished":
                 self.btn_start.configure(state="normal")
-                
-            elif isinstance(msg, str):
-                self._write_log(msg)
                 
             self.ui_queue.task_done()
             
